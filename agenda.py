@@ -1,4 +1,5 @@
-import os, sys
+import os
+import sys
 from typing import List
 from datetime import date, timedelta, datetime
 import matplotlib.pyplot as plt
@@ -28,8 +29,9 @@ LISTAR = 'l'
 DESENHAR = 'g'
 
 
+# Cria uma nova classe para representar os compromissos.
 class Compromisso:
-    def __init__(self, data, hora, pri, desc, contexto, projeto):
+    def __init__(self, data: str, hora: str, pri: str, desc: str, contexto: str, projeto: str):
         self.data = data
         self.hora = hora
         self.prioridade = pri
@@ -144,22 +146,16 @@ def soDigitos(numero: str) -> bool:
     return True
 
 
-# É importante lembrar que linhas do arquivo todo_txt devem estar organizadas de acordo com o
-# seguinte formato:
-#
-# DDMMAAAA HHMM (P) DESC @CONTEXT +PROJ
-#
 # Todos os itens menos DESC são opcionais. Se qualquer um deles estiver fora do formato, por exemplo,
 # data que não tem todos os componentes ou prioridade com mais de um caractere (além dos parênteses),
 # tudo que vier depois será considerado parte da descrição.
-def organizar(linhas: List):
+def organizar(linhas: List[str]) -> List[Compromisso]:
     itens = []
 
     for l in linhas:
         data = ''
         hora = ''
         pri = ''
-        desc = ''
         contexto = ''
         projeto = ''
 
@@ -190,7 +186,8 @@ def organizar(linhas: List):
     return itens
 
 
-def listar():
+# A função listar() organiza e exibe os compromissos do arquivo TODO_FILE segundo suas prioridades, data e hora
+def listar() -> bool:
     try:
         fp = open(TODO_FILE, 'r')
     except IOError as err:
@@ -198,11 +195,12 @@ def listar():
         print(err)
         return False
     else:
-        ls = list(fp)  # Carrega as informações do arquivo TODO_FILE em uma lista de strings
-        listaObjetos = organizar(ls)  # Transforma a lista de Strings em uma lista com objetos do tipo Compromisso
-        listaOrdenada = listaObjetos[:]
-        listaOrdenada = ordenarPorDataHora(listaOrdenada)
-        listaOrdenada = ordenarPorPrioridade(listaOrdenada)
+        ls: List[str] = list(fp)  # Carrega as informações do arquivo TODO_FILE em uma lista de strings
+        listaObjetos: List[Compromisso] = organizar(ls)  # Transforma a lista de Str em uma lista de Compromisso
+        listaOrdenada: List[Compromisso] = listaObjetos[:]  # cria uma copia da lista de objetos para ser ordenada
+        listaOrdenada = ordenarPorDataHora(listaOrdenada)  # ordena as atividades por data e hora
+        listaOrdenada = ordenarPorPrioridade(listaOrdenada)  # Ordena as atividades por prioridade
+        # imprime os compromissos com formatação em cores
         for l in listaOrdenada:
             texto = str(listaObjetos.index(l)+1) + " " + l.novaAtividade()
             if l.prioridade == '(A)':
@@ -219,7 +217,8 @@ def listar():
     return True
 
 
-def dataComparavel(compromisso):
+# Trata as datas (string) dos comrpomisso para um formato (date) para que facilite a comparação.
+def dataComparavel(compromisso: Compromisso) -> datetime.date:
     if compromisso.data != '':
         dia = int(compromisso.data[0:2])
         mes = int(compromisso.data[2:4])
@@ -229,29 +228,33 @@ def dataComparavel(compromisso):
         return date(2200, 12, 30)
 
 
-def horaComparavel(compromisso):
+# Trata a hora dos compromissos para facilitar a ordenação das atividades.
+def horaComparavel(compromisso: Compromisso) -> str:
     if compromisso.hora != '':
         return compromisso.hora
     else:
         return "9999"
 
 
-def ordenarPorDataHora(itens):
+# Ordena os compromissos por hora e por data. As mais antigas aparecem primeiro.
+def ordenarPorDataHora(itens: List[Compromisso]) -> List[Compromisso]:
     itens.sort(key=horaComparavel)
     itens.sort(key=dataComparavel)
     return itens
 
 
-def ordenarPorPrioridade(itens):
+# Ordena os compromissos por prioridade. Prioridade mais alta aparece primeiro.
+def ordenarPorPrioridade(itens: List[Compromisso]) -> List[Compromisso]:
 
-    comPrioridade = [x for x in itens if x.prioridade != ""]
-    semPrioridade = [y for y in itens if y.prioridade == ""]
+    comPrioridade: List[Compromisso] = [x for x in itens if x.prioridade != ""]
+    semPrioridade: List[Compromisso] = [y for y in itens if y.prioridade == ""]
     comPrioridade = sorted(comPrioridade, key=lambda compromisso: compromisso.prioridade)
     itens = comPrioridade + semPrioridade
     return itens
 
 
-def fazer(num):
+# A função fazer() remove uma compromisso concluido do arquivo TODO_FILE e adiciona-o ao arquivo ARCHIVE_FILE.
+def fazer(num: int) -> bool:
     try:
         f = open(TODO_FILE, 'r')
     except IOError as err:
@@ -259,18 +262,19 @@ def fazer(num):
         print(err)
         return False
     else:
-        ls = list(f)
-        itemFeito = organizar([ls[num - 1]])[0]
+        ls: List[str] = list(f)
+        itemFeito: Compromisso = organizar([ls[num - 1]])[0]
         adicionar(itemFeito, ARCHIVE_FILE)
         f.close()
         remover(num)
         return True
 
 
-def remover(numero: int):
+# A função Remover() retira um compromisso do arquivo TODO_FILE.
+def remover(numero: int) -> bool:
     try:
         f = open(TODO_FILE, "r")
-        ls = list(f)
+        ls: List[str] = list(f)
     except IOError as err:
         print("Não foi possível acessar o arquivo " + TODO_FILE)
         print(err)
@@ -298,10 +302,8 @@ def remover(numero: int):
         return True
 
 
-# prioridade é uma letra entre A a Z, onde A é a mais alta e Z a mais baixa.
-# num é o número da atividade cuja prioridade se planeja modificar, conforme
-# exibido pelo comando 'l'.
-def priorizar(num, prioridade):
+# Modifica a prioridade de um determinado Compromisso.
+def priorizar(num: int, prioridade: str) -> bool:
     try:
         f = open(TODO_FILE, "r")
     except IOError as err:
@@ -309,18 +311,18 @@ def priorizar(num, prioridade):
         print(err)
         return False
     else:
-        ls = list(f)
+        ls: List[str] = list(f)
         f.close()
         try:
-            itemParaPriorizar = organizar([ls[num - 1]])
-            itemParaPriorizar[0].prioridade = '(' + prioridade.upper() + ')'
-            ls[num - 1] = itemParaPriorizar[0].novaAtividade() + '\n'
-        except IndexError as err:
+            itemParaPriorizar: Compromisso = organizar([ls[num - 1]])[0]
+            itemParaPriorizar.prioridade = '(' + prioridade.upper() + ')'
+            ls[num - 1] = itemParaPriorizar.novaAtividade() + '\n'
+        except IndexError:
             print(f'Número da atividade inválido. Escolha uma atividade entre 1 e {len(ls)}.')
             return False
         else:
-            itemParaPriorizar[0].prioridade = '(' + prioridade.upper() + ')'
-            ls[num - 1] = itemParaPriorizar[0].novaAtividade() + '\n'
+            itemParaPriorizar.prioridade = '(' + prioridade.upper() + ')'
+            ls[num - 1] = itemParaPriorizar.novaAtividade() + '\n'
             try:
                 f = open(TODO_FILE, 'w')
                 for i in range(0, len(ls)):
@@ -336,13 +338,11 @@ def priorizar(num, prioridade):
         return True
 
 
-def desenhar(dias):
+def desenhar(dias: int) -> bool:
     x = []
     for i in range(dias, 0, -1):
         xi = datetime.now() - timedelta(days=i)
         x.append(xi.strftime('%d/%m/%y'))
-    print(x)
-
     try:
         f = open(ARCHIVE_FILE, 'r')
     except IOError as err:
@@ -350,46 +350,44 @@ def desenhar(dias):
         print(err)
         return False
     else:
-        ls = list(f)
-        lo = organizar(ls)
+        ls: List[str] = list(f)
+        lo: List[Compromisso] = organizar(ls)
         y = []
         for i in x:
-            aux = 0
+            aux: int = 0
             for l in lo:
                 if dataComparavel(l).strftime('%d/%m/%y') == i:
                     aux += 1
             y.append(aux)
-        print(y)
         plt.plot(x, y)
         plt.show()
-    return
+    return True
 
 
-
-# Esta função processa os comandos e informações passados através da linha de comando e identifica
-# que função do programa deve ser invocada. Por exemplo, se o comando 'adicionar' foi usado,
-# isso significa que a função adicionar() deve ser invocada para registrar a nova atividade.
-# O bloco principal fica responsável também por tirar espaços em branco no início e fim dos strings
-# usando o método strip(). Além disso, realiza a validação de horas, datas, prioridades, contextos e
-# projetos.
-def processarComandos(comandos):
+# A Função processarComandos é a função principal que chama as demais funções.
+def processarComandos(comandos: List[str]):
     if comandos[1] == ADICIONAR:
         comandos.pop(0)  # remove 'agenda.py'
         comandos.pop(0)  # remove 'adicionar'
-        itemParaAdicionar = organizar([' '.join(comandos)])[0]
+        itemParaAdicionar: Compromisso = organizar([' '.join(comandos)])[0]
         adicionar(itemParaAdicionar, TODO_FILE)  # novos itens não têm prioridade
+        return
     elif comandos[1] == LISTAR:
         listar()
+        return
     elif comandos[1] == REMOVER:
         if comandos[2].isnumeric():
             remover(int(comandos[2]))
         else:
             print('Digite um número de atividade válido.')
+        return
+
     elif comandos[1] == FAZER:
         if comandos[2].isnumeric():
             fazer(int(comandos[2]))
         else:
             print('Digite um número de atividade válido.')
+        return
     elif comandos[1] == PRIORIZAR:
         if comandos[2].isnumeric():
             if comandos[3].isalpha():
@@ -399,7 +397,6 @@ def processarComandos(comandos):
         else:
             print('Digite um número de atividade válido.')
         return
-
     elif comandos[1] == DESENHAR:
         if comandos[2].isnumeric():
             desenhar(int(comandos[2]))
